@@ -1,8 +1,8 @@
-import React, { forwardRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 
-const PinForMain = forwardRef(({ url, pinId, id }, ref) => {
+const PinForMain = ({ url, pinId, id }) => {
   const [visibleModal, setVisibleModal] = useState(false);
 
   const getPin = () => {
@@ -10,18 +10,14 @@ const PinForMain = forwardRef(({ url, pinId, id }, ref) => {
   };
   return (
     <Link to={`/pins/${pinId}`}>
-      <PinItem id={id} ref={ref}>
+      <PinItem id={id}>
         <PinImg src={url} />
-        <DownloadStartBtn BackgroudColor="#e60023" onClick={getPin}>
-          저장
-        </DownloadStartBtn>
-        {visibleModal && (
-          <DownloadStartBtn BackgroudColor="#eb3450"> 저장됨 </DownloadStartBtn>
-        )}
+        <DownloadStartBtn onClick={getPin}>저장</DownloadStartBtn>
+        {visibleModal && <DownloadStartBtn> 저장됨 </DownloadStartBtn>}
       </PinItem>
     </Link>
   );
-});
+};
 
 const PinItem = styled.article`
   display: inline-flex;
@@ -54,7 +50,7 @@ const DownloadStartBtn = styled.div`
   border-radius: 40px;
   font-size: 23px;
   font-weight: 450;
-  background-color: ${props => props.BackgroudColor};
+  background-color: ${({ theme }) => theme.style.basicRed};
   color: #e9e9e9;
 
   cursor: pointer;

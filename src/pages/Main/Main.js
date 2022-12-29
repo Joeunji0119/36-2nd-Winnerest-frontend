@@ -1,5 +1,4 @@
-import { React, useEffect, useState } from 'react';
-import { useInView } from 'react-intersection-observer';
+import { React, useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import styled from 'styled-components';
@@ -9,60 +8,65 @@ const Main = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem('accessToken');
   const [items, setItems] = useState([]);
-  const [page, setPage] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [ref, inView] = useInView({
-    threshold: 0,
-    triggerOnce: true,
-  });
+
+  const observerRef = useRef(null);
+  const page = useRef(0);
 
   const getItems = async () => {
-    setLoading(true);
-    await axios
-      .get(`http://localhost:8000/pins?pageSize=10&page=${page}`, {
+    page.current += 1;
+
+    const { data } = await axios(
+      `${process.env.REACT_APP_BASEURL}/pins?pageSize=10&page=${page.current}`,
+      {
         headers: {
           Authorization: token,
         },
-      })
-      .then(res => {
-        console.log(res);
-        setItems(prevState => [...res.data.data, ...prevState]);
-      });
-    setLoading(false);
+      }
+    );
+    setItems(prevState => [...data.data, ...prevState]);
   };
 
   useEffect(() => {
     if (!token) {
       alert('로그인이 필요한 서비스입니다!');
       navigate('/auth/signIn');
-    } else {
-      getItems();
     }
-  }, []);
+    if (token) {
+      const options = {
+        root: null,
+        rootMargin: '0px 10px 10px 10px',
+        threshold: 1,
+      };
 
-  useEffect(() => {
-    if (inView && !loading) {
-      setPage(prevState => prevState + 1);
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            console.log(entry.isIntersecting, 'data 가져오는 중');
+            getItems();
+          }
+        });
+      }, options);
+      observer.observe(observerRef.current);
+      console.log('옵저버 연결');
+      return () => {
+        console.log('옵저버 해제');
+        observer.disconnect();
+      };
     }
-  }, [inView, loading]);
+  }, [items]);
+  console.log('get완료');
 
   return (
-    <MainLayout>
-      <MainStyle>
-        {items.map((item, id) => {
-          return (
-            <div key={id}>
-              <PinForMain />
-              {items.length % 10 === 0 ? (
-                <PinForMain {...item} ref={ref} />
-              ) : (
-                <PinForMain {...item} />
-              )}
-            </div>
-          );
-        })}
-      </MainStyle>
-    </MainLayout>
+    <div style={{ background: 'beige' }}>
+      <MainLayout>
+        <MainStyle>
+          {items.map((item, id) => {
+            return <PinForMain key={id} {...item} />;
+          })}
+        </MainStyle>
+        <div style={{ height: '20px', background: 'red' }} ref={observerRef} />
+      </MainLayout>
+    </div>
   );
 };
 const MainLayout = styled.div`
